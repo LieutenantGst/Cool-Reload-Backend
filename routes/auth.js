@@ -202,14 +202,15 @@ app.post("/account/api/oauth/token", async (req, res) => {
         return;
     }
 
+    const effectiveBanUntil = req.user.bannedUntil || req.user.banExpires;
     if (req.user.banned) {
-        if (req.user.bannedUntil && new Date(req.user.bannedUntil) < new Date()) {
-            await User.updateOne({ accountId: req.user.accountId }, { $set: { banned: false, bannedUntil: null, banReason: null } });
+        if (effectiveBanUntil && new Date(effectiveBanUntil) < new Date()) {
+            await User.updateOne({ accountId: req.user.accountId }, { $set: { banned: false, bannedUntil: null, banExpires: null, banReason: null } });
         } else {
             log.debug("User account is banned");
             let banMessage = "You have been permanently banned from Fortnite.";
-            if (req.user.bannedUntil) {
-                banMessage = `You are banned until ${new Date(req.user.bannedUntil).toLocaleString()}. Reason: ${req.user.banReason || "No reason provided."}`;
+            if (effectiveBanUntil) {
+                banMessage = `You are banned until ${new Date(effectiveBanUntil).toLocaleString()}. Reason: ${req.user.banReason || "No reason provided."}`;
             } else if (req.user.banReason) {
                 banMessage = `You have been permanently banned. Reason: ${req.user.banReason}`;
             }

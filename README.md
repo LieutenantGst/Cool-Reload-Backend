@@ -1,44 +1,138 @@
-⭐ Pls leave a star, it helps a lot <3  
+# Cool Reload Backend
 
-This is my own version of better reload and reload backend I currently have no pc to be testing this so if you find any bugs please make sure to find them and create a pull request and I will just accept it until I get my own pc
+A self-hosted backend for Fortnite-style profile and matchmaking features, built for local testing and private server setups.
 
-> [!WARNING]
-> This is a public "backend" this is free and you can make forks to make your own
+This project is designed to support profile loading, item/shop logic, lobby features, matchmaking, moderation tools, and Discord admin actions.
 
----
-
-## Latest Changes
-- Fixed Arena.
-- Added Party System (you can accept friend requests, join lobbies, etc.).
+> This repository is for private/self-hosted use. Please respect Epic and platform terms and use it responsibly.
 
 ---
 
-## Features
-- Fixed `/add` and `/remove` commands breaking lockers.
-- Added autocomplete to `/buy`: You can now type the name of an item and get a dropdown list of matching items from the current shop.
-- Enabled all game modes: Battle Royale, Creative, Save the World, and Live Events are no longer disabled or grayed out in the lobby.
-- Fixed infinite loading by adding safety checks to the Item Shop logic.
-- Added `Reload Tournament` to the Discovery tab.
-- Updated `start.bat` to automatically download the Node folder if it's missing and improved the UI.
-- Fixed the issue where skin styles (like Superhero skins) weren't saving.
-- Bot now sends an image of the Item Shop every time the shop refreshes.
-- `/add`: Add V-Bucks/items/all + OG Pack in one place.
-- `/remove`: Remove all/items in one place.
-- Settings now save even if you change season.
-- Matchmaker now shows players in queue and the timer is fixed.
-- `/leaderboard`: Shows the Top 10 Arena players with 1-hour auto-caching.
-- `/appeal`: Command for banned users to send an appeal to a logs channel.
-- `/check-user`: Admin command to look up users by Name, Discord, or ID (shows profile and ban status).
-- `/create`: Auto-generates an email and a random 12-character password (sent via DM).
-- `/ban`: Added durations (1h, 1d, etc.) and reasons. Banned players see the reason and a countdown timer in-game.
-- `/unban`: Sends a DM notification to the user when they are unbanned.
-- `/change-username`: Added a 1-week cooldown with a countdown timer.
-- `allathena` now gives skins above C4S2.
-- Added Arena — credits to [Ducki67](https://github.com/Ducki67).
+## What this backend includes
+
+- Account/auth flow with token handling
+- Fortnite-like profile generation and updates
+- Battle pass and XP/profile stat persistence
+- Matchmaking session support
+- Item shop / catalog handling
+- Friend and party-related routes
+- Discord moderation commands
+- Custom ban durations and matchmaking bans
+- Lightweight hosting suitability for local or Chromebook-based dev environments
 
 ---
 
-## Removed
-- `/lookup`
-- `/change-password`
-- `/change-email`
+## Current important features
+
+- Profile stats save correctly, including battle pass and progression values
+- Matchmaking bans can be set without fully banning the account
+- Full account bans still work with custom durations
+- Admin `ban` command supports short and long durations such as:
+  - `1h`
+  - `2d`
+  - `1w`
+  - `1mo`
+  - `1y`
+  - `2026-12-31`
+- `ban` can target either:
+  - `account`
+  - `matchmaking`
+- `check-user` shows user status and ban details
+- `unban` clears the ban state and notifies the user
+- Shop and catalog flows are available for item-related gameplay
+
+---
+
+## Requirements
+
+- Node.js 18+
+- MongoDB running locally or on a reachable host
+- A valid config file in `Config/config.json`
+- Optional: Discord bot setup for admin commands
+
+For lightweight setups, this project can be run in a Linux container or dev environment such as a Chromebook with a proper local runtime.
+
+---
+
+## Quick start
+
+1. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+2. Make sure MongoDB is running.
+
+3. Configure your environment values in `Config/config.json`.
+
+4. Start the backend
+
+   ```bash
+   node index.js
+   ```
+
+5. If you are using the Discord admin bot, make sure the bot is configured and started from the project setup.
+
+---
+
+## Main project structure
+
+- `index.js` — backend entrypoint
+- `routes/` — API and game route handlers
+- `model/` — MongoDB schemas
+- `DiscordBot/` — admin and user commands
+- `Config/` — config and default profile data
+- `responses/` — static game data used by the backend
+- `Website/` — web UI pieces
+- `structs/` — shared helpers and utilities
+
+---
+
+## Admin commands
+
+Included moderation tools cover:
+
+- `/ban`
+- `/unban`
+- `/check-user`
+- `/create`
+- `/appeal`
+- `/leaderboard`
+- `/buy`
+- `/add`
+- `/remove`
+- `/change-username`
+
+Examples:
+
+```text
+/ban username:player duration:1mo type:matchmaking reason:Leaving matches
+/ban username:player duration:30d type:account reason:Rule break
+/unban username:player
+```
+
+---
+
+## Matchmaking ban behavior
+
+When a user is banned with `type:matchmaking`, they can still access the lobby, but they are blocked from joining matchmaking queues.
+
+This is useful for temporary competitive restrictions without fully locking the account out of login and profile access.
+
+---
+
+## Notes
+
+- This project is intended for local/self-hosted backend work.
+- It is not a public production-ready service by default.
+- Please keep your config secrets private and do not expose your backend to the internet without proper security controls.
+
+---
+
+## License
+
+This project is licensed under the GNU General Public License v3.0.
+
+See the [LICENSE](LICENSE) file for more details.
+

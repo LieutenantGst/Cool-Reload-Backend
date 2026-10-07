@@ -21,6 +21,29 @@ app.get("/fortnite/api/game/v2/matchmakingservice/ticket/player/*", verifyToken,
     if (req.user.isServer == true) return res.status(403).end();
     if (req.user.matchmakingId == null) return res.status(400).end();
 
+    const effectiveMatchmakingBanUntil = req.user.matchmakingBanUntil || null;
+    if (req.user.matchmakingBanned) {
+        if (effectiveMatchmakingBanUntil && new Date(effectiveMatchmakingBanUntil) < new Date()) {
+            await require("../model/user.js").updateOne({ accountId: req.user.accountId }, {
+                $set: { matchmakingBanned: false, matchmakingBanUntil: null, matchmakingBanReason: null }
+            });
+        } else {
+            const banMessage = effectiveMatchmakingBanUntil
+                ? `You are banned from matchmaking until ${new Date(effectiveMatchmakingBanUntil).toLocaleString()}. Reason: ${req.user.matchmakingBanReason || "No reason provided."}`
+                : `You have been permanently banned from matchmaking. Reason: ${req.user.matchmakingBanReason || "No reason provided."}`;
+
+            return error.createError(
+                "errors.com.epicgames.account.account_not_active",
+                banMessage,
+                [],
+                -1,
+                undefined,
+                400,
+                res,
+            );
+        }
+    }
+
     const playerCustomKey = qs.parse(req.url.split("?")[1], { ignoreQueryPrefix: true })['player.option.customKey'];
     const bucketId = qs.parse(req.url.split("?")[1], { ignoreQueryPrefix: true })['bucketId'];
     if (typeof bucketId !== "string" || bucketId.split(":").length !== 4) {

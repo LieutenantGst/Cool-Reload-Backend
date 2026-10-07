@@ -49,14 +49,14 @@ module.exports = {
 
             const embed = new MessageEmbed()
                 .setTitle(`User Information: ${targetUser.username}`)
-                .setColor(targetUser.banned ? "#ff0000" : "#56ff00")
+                .setColor(targetUser.banned || targetUser.matchmakingBanned ? "#ff0000" : "#56ff00")
                 .addFields(
                     { name: "Display Name", value: `\`${targetUser.username}\``, inline: true },
                     { name: "Email", value: `\`${targetUser.email}\``, inline: true },
                     { name: "Account ID", value: `\`${targetUser.accountId}\``, inline: true },
                     { name: "Discord ID", value: targetUser.discordId ? `<@${targetUser.discordId}> (\`${targetUser.discordId}\`)` : "Not Linked", inline: false },
                     { name: "Creation Date", value: `<t:${Math.floor(new Date(targetUser.created).getTime() / 1000)}:R>`, inline: true },
-                    { name: "Status", value: targetUser.banned ? "🔴 Banned" : "🟢 Active", inline: true },
+                    { name: "Status", value: targetUser.banned || targetUser.matchmakingBanned ? "🔴 Restricted" : "🟢 Active", inline: true },
                     { name: "SAC Code", value: targetUser.currentSACCode ? `\`${targetUser.currentSACCode}\`` : "None", inline: true }
                 )
                 .setTimestamp()
@@ -64,10 +64,19 @@ module.exports = {
 
             if (targetUser.banned) {
                 embed.addField("Ban Reason", targetUser.banReason || "No reason provided", false);
-                if (targetUser.banExpires) {
-                    embed.addField("Ban Expires", `<t:${Math.floor(new Date(targetUser.banExpires) / 1000)}:R>`, true);
+                if (targetUser.banExpires || targetUser.bannedUntil) {
+                    embed.addField("Ban Expires", `<t:${Math.floor(new Date(targetUser.banExpires || targetUser.bannedUntil) / 1000)}:R>`, true);
                 } else {
                     embed.addField("Ban Type", "Permanent", true);
+                }
+            }
+
+            if (targetUser.matchmakingBanned) {
+                embed.addField("Matchmaking Ban Reason", targetUser.matchmakingBanReason || "No reason provided", false);
+                if (targetUser.matchmakingBanUntil) {
+                    embed.addField("Matchmaking Ban Expires", `<t:${Math.floor(new Date(targetUser.matchmakingBanUntil) / 1000)}:R>`, true);
+                } else {
+                    embed.addField("Matchmaking Ban Type", "Permanent", true);
                 }
             }
 

@@ -29,7 +29,17 @@ module.exports = {
         if (!targetUser) return interaction.editReply({ content: "The account username you entered does not exist.", ephemeral: true });
         else if (!targetUser.banned) return interaction.editReply({ content: "This account is already unbanned.", ephemeral: true });
 
-        await targetUser.updateOne({ $set: { banned: false, banExpires: null, banReason: null } });
+        await targetUser.updateOne({
+            $set: {
+                banned: false,
+                bannedUntil: null,
+                banExpires: null,
+                banReason: null,
+                matchmakingBanned: false,
+                matchmakingBanUntil: null,
+                matchmakingBanReason: null,
+            }
+        });
 
         let dmStatus = "";
         if (targetUser.discordId) {
