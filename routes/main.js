@@ -24,6 +24,79 @@ app.post("/fortnite/api/game/v2/chat/*/*/*/pc", (req, res) => {
   res.json(resp);
 });
 
+app.get("/api/v1/daily-reward/status", verifyToken, async (req, res) => {
+  const rewardState = req.user.dailyRewards || {};
+  const lastClaimDate = rewardState.lastClaimDate ? new Date(rewardState.lastClaimDate) : null;
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const claimedToday = lastClaimDate && lastClaimDate >= todayStart;
+
+  res.json({
+    streak: rewardState.streak || 0,
+    lastClaimDate: rewardState.lastClaimDate || null,
+    claimedToday,
+    nextClaimAt: lastClaimDate ? new Date(lastClaimDate.getTime() + 86400000).toISOString() : null,
+  });
+});
+
+app.post("/api/v1/daily-reward/claim", verifyToken, async (req, res) => {
+  const user = await User.findOne({ accountId: req.user.accountId });
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const currentState = user.dailyRewards || {};
+  const lastClaimDate = currentState.lastClaimDate ? new Date(currentState.lastClaimDate) : null;
+
+  if (lastClaimDate && lastClaimDate >= todayStart) {
+    return res.status(400).json({ error: "Daily reward already claimed today" });
+  }
+
+  const streak = lastClaimDate && lastClaimDate >= new Date(todayStart.getTime() - 86400000)
+    ? (currentState.streak || 0) + 1
+    : 1;
+
+  const rewardAmount = Math.min(100 + streak * 25, 500);
+  const profiles = await require("../model/profiles.js").findOne({ accountId: req.user.accountId });
+  if (profiles) {
+    const profile = profiles.profiles.common_core;
+    const profile0 = profiles.profiles.profile0;
+    if (!profile.items["Currency:MtxPurchased"]) {
+      profile.items["Currency:MtxPurchased"] = { templateId: "Currency:MtxPurchased", quantity: 0, attributes: {} };
+    }
+    if (!profile0.items["Currency:MtxPurchased"]) {
+      profile0.items["Currency:MtxPurchased"] = { templateId: "Currency:MtxPurchased", quantity: 0, attributes: {} };
+    }
+    profile.items["Currency:MtxPurchased"].quantity += rewardAmount;
+    profile0.items["Currency:MtxPurchased"].quantity += rewardAmount;
+    profiles.profiles.common_core = profile;
+    profiles.profiles.profile0 = profile0;
+    await profiles.updateOne({
+      $set: {
+        ['profiles.common_core']: profile,
+        ['profiles.profile0']: profile0,
+      }
+    });
+  }
+
+  const updatedState = {
+    streak,
+    lastClaimDate: now.toISOString(),
+    totalClaimed: (currentState.totalClaimed || 0) + rewardAmount,
+    lastReward: rewardAmount,
+  };
+
+  await user.updateOne({ $set: { dailyRewards: updatedState } });
+
+  res.json({
+    success: true,
+    streak,
+    rewardAmount,
+    nextClaimAt: new Date(now.getTime() + 86400000).toISOString(),
+    dailyRewards: updatedState,
+  });
+});
+
 app.post("/fortnite/api/game/v2/tryPlayOnPlatform/account/*", (req, res) => {
   log.debug("POST /fortnite/api/game/v2/tryPlayOnPlatform/account/* called");
   res.setHeader("Content-Type", "text/plain");

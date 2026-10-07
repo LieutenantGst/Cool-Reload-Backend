@@ -19,7 +19,8 @@ const UserSchema = new mongoose.Schema(
         matchmakingId: { type: String, required: true, unique: true},
         isServer: { type: Boolean, default: false},
         currentSACCode: { type: String, default: null },
-        lastUsernameChange: { type: Date, default: null }
+        lastUsernameChange: { type: Date, default: null },
+        dailyRewards: { type: Object, default: {} }
     },
     {
         collection: "users"
