@@ -1999,6 +1999,112 @@ app.post(
   },
 );
 
+async function handleSetProfileStats(req, res) {
+  const profiles = await Profile.findOne({ accountId: req.user.accountId });
+  const profileId = req.query.profileId || "athena";
+
+  if (!(await profileManager.validateProfile(profileId, profiles))) {
+    return error.createError(
+      "errors.com.epicgames.modules.profiles.operation_forbidden",
+      `Unable to find template configuration for profile ${profileId}`,
+      [profileId],
+      12813,
+      undefined,
+      403,
+      res,
+    );
+  }
+
+  let profile = profiles.profiles[profileId];
+  const memory = functions.GetVersionInfo(req);
+  let ApplyProfileChanges = [];
+  let BaseRevision = profile.rvn || 0;
+  let ProfileRevisionCheck =
+    memory.build >= 12.2 ? profile.commandRevision : profile.rvn;
+  let QueryRevision = req.query.rvn || -1;
+  let StatChanged = false;
+
+  if (!profile.stats) profile.stats = { attributes: {} };
+  if (!profile.stats.attributes) profile.stats.attributes = {};
+
+  const statEntries = [];
+  if (Array.isArray(req.body.stats)) {
+    statEntries.push(...req.body.stats);
+  } else if (
+    req.body &&
+    (typeof req.body.statName === "string" ||
+      Object.prototype.hasOwnProperty.call(req.body, "value"))
+  ) {
+    statEntries.push({
+      statName: req.body.statName,
+      value: req.body.value,
+    });
+  } else if (req.body && typeof req.body === "object") {
+    for (const [statName, value] of Object.entries(req.body)) {
+      if (["profileId", "rvn", "statName", "value"].includes(statName)) {
+        continue;
+      }
+      statEntries.push({ statName, value });
+    }
+  }
+
+  for (const statEntry of statEntries) {
+    if (!statEntry || typeof statEntry.statName !== "string") continue;
+
+    const previousValue = profile.stats.attributes[statEntry.statName];
+    const nextValue = statEntry.value;
+
+    profile.stats.attributes[statEntry.statName] = nextValue;
+
+    if (previousValue !== nextValue) {
+      ApplyProfileChanges.push({
+        changeType: "statModified",
+        name: statEntry.statName,
+        value: nextValue,
+      });
+      StatChanged = true;
+    }
+  }
+
+  if (StatChanged) {
+    profile.rvn += 1;
+    profile.commandRevision += 1;
+    profile.updated = new Date().toISOString();
+    await profiles.updateOne({
+      $set: { [`profiles.${profileId}`]: profile },
+    });
+  }
+
+  if (QueryRevision != ProfileRevisionCheck) {
+    ApplyProfileChanges = [{
+      changeType: "fullProfileUpdate",
+      profile: profile,
+    }];
+  }
+
+  res.json({
+    profileRevision: profile.rvn || 0,
+    profileId: profileId,
+    profileChangesBaseRevision: BaseRevision,
+    profileChanges: ApplyProfileChanges,
+    profileCommandRevision: profile.commandRevision || 0,
+    serverTime: new Date().toISOString(),
+    responseVersion: 1,
+  });
+}
+
+app.post(
+  "/fortnite/api/game/v2/profile/*/client/SetProfileStat",
+  verifyToken,
+  handleSetProfileStats,
+);
+
+app.post(
+  "/fortnite/api/game/v2/profile/*/client/SetProfileStats",
+  verifyToken,
+  handleSetProfileStats,
+);
+
 app.post(
   "/fortnite/api/game/v2/profile/*/client/RequestRestedStateIncrease",
   async (req, res) => {
