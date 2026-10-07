@@ -1,10 +1,9 @@
 ⭐ Pls leave a star, it helps a lot <3  
 
-I quit OGFN so dont ask me for anything
+This is my own version of better reload and reload backend I currently have no pc to be testing this so if you find any bugs please make sure to find them and create a pull request and I will just accept it until I get my own pc
 
 > [!WARNING]
-> 1. This backend is **public**, which means it is **not for selling**.  
-> 2. If you are using this backend, **please give credits**.
+> This is a public "backend" this is free and you can make forks to make your own
 
 ---
 
